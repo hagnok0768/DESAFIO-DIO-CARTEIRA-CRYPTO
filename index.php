@@ -4,9 +4,38 @@
     <meta charset="UTF-8">
     <title>Gerador de Carteira Bitcoin HD</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="https://unpkg.com/bip39@3.0.4/dist/bip39.browser.js"></script>
-    <script src="https://unpkg.com/bitcoinjs-lib@6.1.0/dist/bitcoinjs-lib.min.js"></script>
-    <script src="assets/js/wallet.js" defer></script>
+        <!-- Load local libs first (assets/libs/) then fallback to CDN if missing -->
+        <script>
+        (function(){
+            const libs = [
+                { local: 'assets/libs/bip39.browser.js', cdn: 'https://unpkg.com/bip39@3.0.4/dist/bip39.browser.js' },
+                { local: 'assets/libs/bitcoinjs-lib.min.js', cdn: 'https://unpkg.com/bitcoinjs-lib@6.1.0/dist/bitcoinjs-lib.min.js' }
+            ];
+            function load(src){
+                return new Promise((res, rej)=>{
+                    const s = document.createElement('script');
+                    s.src = src; s.async = true;
+                    s.onload = () => res(src);
+                    s.onerror = () => rej(new Error('failed to load ' + src));
+                    document.head.appendChild(s);
+                });
+            }
+            (async function(){
+                for(const lib of libs){
+                    // try local first
+                    try{ await load(lib.local); continue; }catch(e){
+                        // local failed — try CDN
+                        try{ await load(lib.cdn); continue; }catch(e2){ console.error('Failed to load lib', lib, e2); }
+                    }
+                }
+            })();
+        })();
+        </script>
+        <!-- Additional CDN fallbacks recommended for shared hosting (Hostinger) -->
+        <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.1/src/index.min.js"></script>
+        <script src="https://bundle.run/bitcoinjs-lib@5.2.0"></script>
+        <script src="https://bundle.run/buffer@6.0.3"></script>
+        <script src="assets/js/wallet.js" defer></script>
 </head>
 </body>
 <body>
@@ -66,6 +95,9 @@
                 </div>
             </div>
         </section>
+                <div style="max-width:1100px;margin:12px auto 60px;">
+                    <div id="save-result" class="footnote"></div>
+                </div>
     </div>
 
     <script>
@@ -73,11 +105,23 @@
     const outWif = document.getElementById('out-wif');
     const outAddress = document.getElementById('out-address');
     const qrImg = document.getElementById('qr-img');
+    const btnGenerate = document.getElementById('btn-generate');
+    const btnNew = document.getElementById('btn-new');
+    const saveResult = document.getElementById('save-result') || document.createElement('div');
+
+    function setBusy(state){
+        btnGenerate.disabled = state;
+        btnNew.disabled = state;
+        btnGenerate.style.opacity = state ? '0.6' : '1';
+    }
 
     async function saveAddressToServer(address){
         try{
-            const r = await fetch('api/save_address.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address }) });
-            return r.ok ? await r.json() : { success:false };
+            // send as application/x-www-form-urlencoded for better compatibility with simple PHP hosts
+            const body = new URLSearchParams();
+            body.append('address', address);
+            const r = await fetch('api/save_address.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() });
+            try{ return r.ok ? await r.json() : { success:false }; }catch(e){ return { success:false } }
         }catch(e){ return { success:false } }
     }
 
@@ -87,18 +131,25 @@
         outAddress.innerHTML = '<code>' + result.address + '</code>';
         qrImg.src = 'https://chart.googleapis.com/chart?chs=240x240&cht=qr&chl=' + encodeURIComponent(result.address);
         qrImg.style.display = 'none';
-        await saveAddressToServer(result.address);
+        const saved = await saveAddressToServer(result.address);
+        saveResult.textContent = saved && saved.success ? 'Endereço salvo no servidor.' : 'Falha ao salvar endereço.';
     }
 
-    document.getElementById('btn-generate').addEventListener('click', async function(){
-        const res = await window.generateWallet();
-        await populate(res, true);
-    });
+    async function handleGenerate(showSecrets){
+        setBusy(true);
+        saveResult.textContent = '';
+        try{
+            if(typeof window.generateWallet !== 'function') throw new Error('Função generateWallet não disponível. Verifique se os scripts foram carregados.');
+            const res = await window.generateWallet();
+            await populate(res, showSecrets);
+        }catch(err){
+            console.error(err);
+            saveResult.textContent = 'Erro: ' + (err.message || err);
+        }finally{ setBusy(false); }
+    }
 
-    document.getElementById('btn-new').addEventListener('click', async function(){
-        const res = await window.generateWallet();
-        await populate(res, false);
-    });
+    btnGenerate.addEventListener('click', function(){ handleGenerate(true); });
+    btnNew.addEventListener('click', function(){ handleGenerate(false); });
 
     document.getElementById('copy-address').addEventListener('click', function(){
         const txt = outAddress.textContent.trim();
