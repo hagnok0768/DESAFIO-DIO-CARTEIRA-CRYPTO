@@ -11,68 +11,102 @@
 </body>
 <body>
     <div class="wrap">
-        <div class="grid">
-            <div>
-                <div class="card">
+        <header class="header-bar">
+            <div class="logo">
+                <div class="mark">B</div>
+                <div class="text">BTC Wallet</div>
+            </div>
+            <nav>
+                <a class="btn ghost" href="dashboard.php">Dashboard</a>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="hero-left">
+                <div class="panel">
                     <div class="title">Gerador de Carteira Bitcoin HD</div>
-                    <div class="small">A seed e a chave privada são geradas apenas no navegador — nunca enviadas ao servidor.</div>
-                    <div style="margin-top:16px">
-                        <button class="btn" id="btn-generate">Gerar carteira</button>
-                        <button class="btn" id="btn-new" style="margin-left:8px;background:#f97316;color:#06202a">Gerar somente endereço</button>
+                    <div class="muted">Gere uma seed no seu navegador. Nunca envie a seed ou a chave privada ao servidor.</div>
+
+                    <div style="margin-top:18px" class="kpi">
+                        <div class="item">
+                            <div class="small">Padrão</div>
+                            <div class="code">BIP84 (m/84'/0'/0'/0/0)</div>
+                        </div>
+                        <div class="item">
+                            <div class="small">SegWit</div>
+                            <div class="code">Bech32 (bc1)</div>
+                        </div>
                     </div>
-                    <div class="output" id="out-mnemonic">Seed: —</div>
-                    <div class="output" id="out-wif">Chave Privada: —</div>
-                    <div class="output" id="out-address">Endereço: —</div>
-                    <div class="small" id="save-result"></div>
+
+                    <div style="margin-top:16px">
+                        <button class="btn primary" id="btn-generate">Gerar carteira</button>
+                        <button class="btn ghost" id="btn-new">Gerar somente endereço</button>
+                    </div>
+
+                    <div class="footnote">Ao gerar, o endereço será salvo no servidor — a seed e a WIF permanecerão localmente.</div>
+                </div>
+
+                <div style="margin-top:16px" class="panel">
+                    <div class="small">Seed (guarde com segurança)</div>
+                    <div class="output" id="out-mnemonic">—</div>
+                    <div class="small" style="margin-top:8px">Chave Privada (WIF)</div>
+                    <div class="output" id="out-wif">—</div>
                 </div>
             </div>
 
-            <aside>
-                <div class="card">
-                    <div class="title">Ações</div>
-                    <div class="small">Copie seu endereço e verifique no dashboard.</div>
-                    <div style="margin-top:12px">
-                        <button class="btn" id="copy-address">Copiar endereço</button>
+            <div class="hero-right">
+                <div class="panel">
+                    <div class="small">Endereço</div>
+                    <div class="output" id="out-address"><code>—</code></div>
+                    <img id="qr-img" class="qr" src="" alt="QR" style="display:none" />
+                    <div style="display:flex;gap:8px;margin-top:8px">
+                        <button class="btn" id="copy-address">Copiar</button>
+                        <button class="btn ghost" id="show-qr">Mostrar QR</button>
                     </div>
                 </div>
-            </aside>
-        </div>
+            </div>
+        </section>
     </div>
 
     <script>
-    // Elementos
     const outMnemonic = document.getElementById('out-mnemonic');
     const outWif = document.getElementById('out-wif');
     const outAddress = document.getElementById('out-address');
-    const saveResult = document.getElementById('save-result');
+    const qrImg = document.getElementById('qr-img');
 
-    async function onWalletGenerated(res){
-        outMnemonic.innerHTML = '<strong>Seed:</strong><br>' + res.mnemonic;
-        outWif.innerHTML = '<strong>Chave Privada (WIF):</strong><br>' + res.wif;
-        outAddress.innerHTML = '<strong>Endereço:</strong><br><code>' + res.address + '</code>';
+    async function saveAddressToServer(address){
         try{
-            const r = await fetch('api/save_address.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ address: res.address }) });
-            const j = await r.json();
-            if(j && j.success) saveResult.textContent = 'Endereço salvo no servidor.'; else saveResult.textContent = 'Erro ao salvar.';
-        }catch(e){ saveResult.textContent = 'Erro de conexão ao salvar.' }
+            const r = await fetch('api/save_address.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address }) });
+            return r.ok ? await r.json() : { success:false };
+        }catch(e){ return { success:false } }
+    }
+
+    async function populate(result, showSecrets=true){
+        if(showSecrets){ outMnemonic.innerHTML = '<code>' + result.mnemonic + '</code>'; outWif.innerHTML = '<code>' + result.wif + '</code>'; }
+        else { outMnemonic.innerHTML = '<span class="muted">(não exibido)</span>'; outWif.innerHTML = '<span class="muted">(não exibido)</span>'; }
+        outAddress.innerHTML = '<code>' + result.address + '</code>';
+        qrImg.src = 'https://chart.googleapis.com/chart?chs=240x240&cht=qr&chl=' + encodeURIComponent(result.address);
+        qrImg.style.display = 'none';
+        await saveAddressToServer(result.address);
     }
 
     document.getElementById('btn-generate').addEventListener('click', async function(){
         const res = await window.generateWallet();
-        onWalletGenerated(res);
+        await populate(res, true);
     });
 
     document.getElementById('btn-new').addEventListener('click', async function(){
         const res = await window.generateWallet();
-        outMnemonic.innerHTML = '<span class="small">(não exibido)</span>';
-        outWif.innerHTML = '<span class="small">(não exibido)</span>';
-        outAddress.innerHTML = '<strong>Endereço:</strong><br><code>' + res.address + '</code>';
-        try{ await fetch('api/save_address.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:res.address})}); saveResult.textContent='Endereço salvo.' }catch(e){ saveResult.textContent='Erro ao salvar.' }
+        await populate(res, false);
     });
 
     document.getElementById('copy-address').addEventListener('click', function(){
-        const txt = outAddress.textContent || '';
+        const txt = outAddress.textContent.trim();
         navigator.clipboard.writeText(txt).then(()=>{ alert('Endereço copiado') }).catch(()=>{ alert('Falha ao copiar') });
+    });
+
+    document.getElementById('show-qr').addEventListener('click', function(){
+        if(qrImg.style.display === 'none') qrImg.style.display = 'block'; else qrImg.style.display = 'none';
     });
     </script>
 </body>

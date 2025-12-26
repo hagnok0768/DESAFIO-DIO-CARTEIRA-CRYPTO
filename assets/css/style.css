@@ -25,3 +25,27 @@ body{
 .table th,.table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
 .balance{font-weight:700}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* Binance-like theme overrides */
+:root{
+    --brand-yellow: #f0b90b;
+    --panel: rgba(255,255,255,0.03);
+}
+body{background:linear-gradient(180deg,#05070a 0%, #091024 100%);}
+.header-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .mark{width:36px;height:36px;background:linear-gradient(45deg,var(--brand-yellow),#d39000);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#071226}
+.logo .text{font-weight:700;font-size:1.1rem;color:#fff}
+.hero{display:flex;gap:24px;align-items:center}
+.hero-left{flex:1}
+.hero-right{width:360px}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:18px;border-radius:12px}
+.muted{color:var(--muted);font-size:0.9rem}
+.btn.primary{background:var(--brand-yellow);color:#071226}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff}
+.kpi{display:flex;gap:12px}
+.kpi .item{flex:1;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;text-align:center}
+.qr{display:block;margin:10px auto;border-radius:8px;background:#fff;padding:8px}
+.code{background:#071226;padding:6px 8px;border-radius:6px;color:var(--brand-yellow);font-weight:700}
+.reveal{background:transparent;border:0;color:var(--brand-yellow);cursor:pointer}
+.footnote{margin-top:12px;font-size:0.85rem;color:var(--muted)}
