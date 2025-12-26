@@ -1,0 +1,27 @@
+/* Estilos para o gerador de carteira e dashboard */
+:root{
+    --bg-1: #0f172a;
+    --bg-2: #0b1220;
+    --card: rgba(255,255,255,0.04);
+    --accent: #22d3ee;
+    --muted: #94a3b8;
+}
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg,var(--bg-1),var(--bg-2));
+    color:#e6eef6;
+    -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1100px;margin:32px auto;padding:16px}
+.grid{display:grid;grid-template-columns:1fr 420px;gap:20px}
+.card{background:var(--card);padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(2,6,23,0.6)}
+.title{font-size:1.6rem;margin-bottom:12px;color:var(--accent)}
+.btn{display:inline-block;background:var(--accent);color:#06202a;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+.output{background:#0b1220;border-radius:8px;padding:12px;margin-top:12px;color:#cfeefc;font-size:0.95rem;word-break:break-word}
+.small{font-size:0.85rem;color:var(--muted)}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+.balance{font-weight:700}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
